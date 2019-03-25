@@ -10,7 +10,7 @@ CARD_SHEET_WIDE = 6
 CARDS_IN_SUIT = 13
 CARDS_IN_DECK = 52
 
-NUM_TABLEAUS = 7
+NUM_TABLEAUS = 8
 
 -- starting indices for suits in sprite sheet
 SPADES_START = 1

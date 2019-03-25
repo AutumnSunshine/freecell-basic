@@ -15,6 +15,22 @@ function GameBoard:init()
     self:generateTableaus()
 end
 
+--function that checks and sets if cards are ordered - to identify which cards can be moved ---
+function GameBoard:checkOrder(tableau)
+             
+             local tempCard = tableau[#tableau]
+             print("Checking..."..tempCard.face.." "..tempCard.suit)
+             while tempCard do
+               tempCard.isOrdered = true
+               if tempCard.parent and tempCard:compareCards(tempCard.parent,'ascending', 'opposite') then
+                   tempCard = tempCard.parent
+               else
+                   tempCard = nil
+               end
+             end
+end  
+---
+
 function GameBoard:generateTableaus()
     
     -- populate all tableaus with starting cards
@@ -47,8 +63,11 @@ function GameBoard:generateTableaus()
             local padding = 25
             yPos = yPos + padding
         end
+        self:checkOrder(self.tableaus[i])
     end
-end
+        
+ 
+ end
 
 function GameBoard:update(dt)
 
@@ -62,10 +81,9 @@ function GameBoard:update(dt)
 
         for j = #self.tableaus[i], 1, -1 do
             local temp = self.tableaus[i][j]
-            if temp~= nil then
+            if temp~= nil and temp.isOrdered then
                 self.tableaus[i][j]:update(dt, self, self.tableaus[i])
             end 
-       
         end
 	
     end 
@@ -77,7 +95,7 @@ function GameBoard:render()
     -- render tableaus
     self:renderTableaus()
 
-   -- self:renderPickedUpCards()
+   self:renderPickedUpCards()
 end
 
 function GameBoard:renderPickedUpCards()
@@ -98,6 +116,9 @@ function GameBoard:renderTableaus()
     end
 end
 
+  
+
+
 
 ---draws the outlines for Free Pile, Win Pile and tableaus
 function GameBoard:drawBackground()
@@ -117,7 +138,6 @@ function GameBoard:drawBackground()
     love.graphics.rectangle('line', 570, 50, CARD_WIDTH, CARD_HEIGHT, 3)
     love.graphics.rectangle('line', 650, 50, CARD_WIDTH, CARD_HEIGHT, 3)
         
-
     -- tableau grid markers
     love.graphics.rectangle('line', 10, 160, CARD_WIDTH, CARD_HEIGHT, 3)
     love.graphics.rectangle('line', 90, 160, CARD_WIDTH, CARD_HEIGHT, 3)

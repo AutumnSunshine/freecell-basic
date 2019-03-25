@@ -11,6 +11,7 @@ function Card:init(face, suit, x, y)
     
     ---Properties that will be modified over the lifetime of a card
     self.pickedUp = false
+    self.isOrdered = false
 
     self.x = x
     self.y = y
@@ -140,8 +141,7 @@ function Card:transferTableaus(gameBoard, tableau, x,y)
                         break
                 end 
         end
-        
-          
+       
         for i = 1, NUM_TABLEAUS do
               ---ensure it is not the same as original Tableau
               if i ~= gameBoard.pickedUpTableau and #gameBoard.tableaus[i] > 0 then
@@ -171,3 +171,41 @@ function Card:transferTableaus(gameBoard, tableau, x,y)
               end
         end
 end 
+
+--- compare self with secondCard as per order & suit mentioned as parameters --
+function Card:compareCards(secondCard, order, suit)
+         
+         print("Comparing..."..self.face.." "..self.suit.."and"..secondCard.face.." "..secondCard.suit)
+         
+         local resultFace = false
+         local resultSuit = false
+        
+         if order == 'ascending' then
+                resultFace = ( secondCard.face == (self.face + 1))
+         elseif order == 'descending' then
+                resultFace = ( secondCard.face == (self.face - 1))
+         end
+         
+         if self.suit ~= 'opposite' then
+                resultSuit = (self.suit == secondCard.suit)
+         elseif self.suit == HEARTS then
+                resultSuit = (secondCard.suit ~= DIAMONDS)
+         elseif self.suit == DIAMONDS then
+                resultSuit = (secondCard.suit ~= HEARTS)
+         elseif self.suit == SPADES then
+                resultSuit = (secondCard.suit ~= CLUBS)
+         else 
+                resultSuit = (secondCard.suit ~= SPADES)
+         end
+         
+         if suit == 'opposite' then
+                resultSuit= (self.suit == secondCard.suit) and resultSuit
+         end
+         
+         return (resultFace and resultSuit)
+end                
+         
+         
+         
+
+
