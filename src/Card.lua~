@@ -167,7 +167,8 @@ function Card:transferTableaus(gameBoard, tableau, x,y, pile)
                 end 
         end
         
-        --check if its a single card & if its been placed in an available free/win Pool--
+        
+        --check if its a single card & if its destination is an available free Pool--
         if not gameBoard.cardPickedUp.child then
                 if gameBoard.numEmptyFreePools > 0 then
                         for i = 1, NUM_FREEPOOLS do
@@ -188,7 +189,7 @@ function Card:transferTableaus(gameBoard, tableau, x,y, pile)
         --check if the card is placed on another tableau (not same as original tableau)
         for i = 1, NUM_TABLEAUS do
               if pile == FREEPOOL_PILE or i ~= gameBoard.pickedUpTableau then
-                      
+                      local allowedNumCards = (2 ^ (gameBoard.numEmptyTableaus)) * (gameBoard.numEmptyFreePools + 1)
                       local bottomCard = nil 
                       local tableau_x = 10 + 80 * (i - 1)
                       local tableau_y = 160
@@ -197,12 +198,19 @@ function Card:transferTableaus(gameBoard, tableau, x,y, pile)
                                bottomCard=gameBoard.tableaus[i][#gameBoard.tableaus[i]]
                                tableau_x = bottomCard.x
                                tableau_y = bottomCard.y
+                      else
+                          allowedNumCards = allowedNumCards / 2
                       end
                       --if the bottom card for this tableau is of opposite suit & 1 value above the top Picked up card 
                       --remove the picked up cards from old tableau and insert into new tableau 
-                           
+                      
                         if x >= tableau_x and x <= tableau_x + CARD_WIDTH and
                            y >= tableau_y and y <= tableau_y + CARD_HEIGHT 
+                       --    and (#tableau - topCardPosition + 1) <= allowedNumCards 
+                       
+                       --[[retain/remove the comment from above line for ignoring/enforcing freecell rules 
+                           for number of cards that can be moved]]  
+                        
                         then 
                               --move the cards from old tableau to new tableau
                               if bottomCard == nil then --i.e. empty tableau
@@ -250,7 +258,6 @@ function Card:moveCards(oldTableau, posInTableau, newTableau, newParent, newPosX
          end
          
          if newParent then
-             
                 newParent.child = self
          end
          

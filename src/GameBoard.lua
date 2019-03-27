@@ -13,7 +13,7 @@ function GameBoard:init()
     self.pickedUpTableau = 0 
     self.numEmptyFreePools = 4
     self.numEmptyTableaus = 0
-    
+    self.isWin = false
 
     self:generateTableaus()
 end
@@ -106,6 +106,14 @@ function GameBoard:render()
    self:renderTableaus()
    self:renderPickedUpCards()
    self:renderPools()
+   if self.isWin then
+         --print the congratulations message--
+         love.graphics.clear(0, 0.3, 0, 1)
+         love.graphics.setNewFont(50)
+         love.graphics.setColor(1, 1, 1, 1)
+         love.graphics.printf ("Congratulations! You have won!", 0 ,  WINDOW_HEIGHT/2, WINDOW_WIDTH, "center")
+   end
+
 end
 
 function GameBoard:renderPickedUpCards()
@@ -170,10 +178,7 @@ function GameBoard:checkForWin()
                 return
         end
    end
-   print("Congratulations!")
-   love.graphics.setColor(0, 0, 0, 1)
-   love.graphics.printf ("Congratulations! You win!!!", WINDOW_WIDTH/2,  WINDOW_HEIGHT/2, 200, "center")
-
+   self.isWin = true
 end
 
 ---draws the outlines for Free Pile, Win Pile and tableaus
@@ -201,5 +206,5 @@ function GameBoard:drawBackground()
     love.graphics.rectangle('line', 410, 160, CARD_WIDTH, CARD_HEIGHT, 3)
     love.graphics.rectangle('line', 490, 160, CARD_WIDTH, CARD_HEIGHT, 3)
     love.graphics.rectangle('line', 570, 160, CARD_WIDTH, CARD_HEIGHT, 3)
-
+    
 end
