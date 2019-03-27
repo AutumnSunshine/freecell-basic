@@ -1,8 +1,8 @@
 --[[
-    Solitaire
+    FreeCell game based on solitaire
 
-    Author: Colton Ogden
-    cogden@cs50.harvard.edu
+    Author: Colton Ogden, CS50 Twitch team
+    For more info, please check https://www.youtube.com/watch?v=BCp7_n-L-tc
 ]]
 
 require 'src/Dependencies'

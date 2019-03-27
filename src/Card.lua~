@@ -20,52 +20,29 @@ function Card:init(face, suit, x, y)
     self.child = nil
 end
 
+function Card:render(x, y)
+        love.graphics.draw(gTextures['cards'], gCardQuads[self.suit][self.face], 
+            self.x, self.y)
+end
+
 --[[
     Pick up the card, flagging it as such, then remove it from the tableau
-    in which it is. Make a copy of this card and add it to the game board's
-    staging hand.
+    in which it is. 
 ]]
-function Card:pickUp(tableau, gameBoard)
-    self.pickedUp = true
-     
-    if tableau == nil then
-        return
-    end
 
-    table.insert(gameBoard.pickedUpCards, table.remove(tableau, #tableau))
-
-    if self.child then
-        self.child:pickUp(tableau, gameBoard)
-    end
-end
-
-function Card:placeDown(gameBoard)
-
-    -- card by itself
-    if self.child == nil and self.parent == nil then
-        
-        -- check to see if placing in tableau OR winning pile
-    
-    -- otherwise, only worry about placing a top-level card
-    -- place ONLY in tableaus, not winning piles
-    elseif self.child ~= nil and self.parent == nil then
-        
-    end
-end
-
-function Card:update(dt, gameBoard, tableau)
+function Card:update(dt, gameBoard, tableau, pile)
    
     -- update card based on its parent
     if self.pickedUp then
-     if self.parent == nil or self.parent.pickedUp == false then
+        if self.parent == nil or self.parent.pickedUp == false then
 	    self.x, self.y = love.mouse.getPosition()
             self.x = self.x - CARD_WIDTH / 2
             self.y = self.y - CARD_HEIGHT / 2
-     else
+        else
            self.x = self.parent.x
-           self.y = self.parent.y + 25
-     end  
-    end
+           self.y = self.parent.y + CARD_PADDING
+        end  
+    end -- okay
 
     if love.mouse.wasButtonPressed(1)  then
         local x, y = love.mouse.getPosition()
@@ -74,8 +51,8 @@ function Card:update(dt, gameBoard, tableau)
         -- for when cards are behind other cards
         local yBounds = CARD_HEIGHT
         if self.child ~= nil then
-            yBounds = 25
-        end
+            yBounds = CARD_PADDING
+        end -- okay
 
         if x >= self.x and x <= self.x + CARD_WIDTH and
            y >= self.y and y <= self.y + yBounds then
@@ -83,57 +60,105 @@ function Card:update(dt, gameBoard, tableau)
             -- ensure we're not already picking up a card
             if not gameBoard.cardPickedUp then
                 
-                --[[Ensure this is the topmost card being picked up
+                --[[Ensure this is the topmost card being picked up,
                     set the cardPickedUp of gameboard to the topmost card
                     & pick up all the cards below topmost card ]]
                     
                 if self.parent == nil or self.parent.pickedUp == false then
                     gameBoard.cardPickedUp = self
                     
-                    for key, tab in pairs(gameBoard.tableaus) do
-		        if tab == tableau then
+                    --if picked up card in a tableau--
+                    if pile == TABLEAU_PILE then
+                        for key, tab in pairs(gameBoard.tableaus) do
+		            if tab == tableau then
 		                gameBoard.pickedUpTableau = key
+		            end
+		        end 
+		    else
+		    -- check if picked up card is not in freePool --
+		        for key, tab in pairs(gameBoard.freePools) do
+		            if tab == tableau then
+		               gameBoard.pickedUpTableau = key
+		            end
 		        end
-		    end
+                    end
                     
                     local tempCard = self
 		    while (tempCard~=nil) do
     		       tempCard.pickedUp = true
 		       tempCard = tempCard.child
 		    end
-                    --self:pickUp(tableau, gameBoard)
-		end
+		    gameBoard:countEmptyPiles()
+		end 
 		
 	    ---i.e. some card is already picked up and its time to put them down
             elseif self.pickedUp  then	
                          --[[ Place down all the picked up cards
                              set the cardPickedUp of gameboard to NIL
                            ]]
-		        self:transferTableaus(gameBoard, tableau, x,y)
-		        local tempCard = gameBoard.cardPickedUp
-		        while (tempCard~=nil) do
-    		                tempCard.x = tempCard.parent.x
-    		                tempCard.y = tempCard.parent.y + 25
-    		                tempCard.pickedUp = false
-		                tempCard = tempCard.child
-		        end
-		       gameBoard.cardPickedUp = nil
-		       gameBoard.pickedUpTableau = 0
-            end
-        end
+		        self:transferTableaus(gameBoard, tableau, x, y, pile)
+		        gameBoard.cardPickedUp = nil
+		        gameBoard.pickedUpTableau = 0
+		        gameBoard:checkOrder(tableau)
+		        gameBoard:countEmptyPiles()
+		        love.mouse.setPosition(self.x - 5, self.y)
+		        
+            end  
+       end
+       
     elseif love.mouse.wasButtonPressed(2)  then
         local x, y = love.mouse.getPosition()
-	print("Calling else if")
-    end
+        -- check if this card is a single card can be placed in the WinPool
+        if self.child == nil then
+            if x >= self.x and x <= self.x + CARD_WIDTH and
+               y >= self.y and y <= self.y + CARD_HEIGHT then
+               local index = self:checkWinPile(gameBoard)  
+               if index > 0 then
+                    self:moveCards(tableau, #tableau, gameBoard.winPools[index],
+                                   gameBoard.winPools[index][#gameBoard.winPools[index]], 410 + 80 * (index - 1), 50 )
+                    gameBoard:checkOrder(tableau)
+                    gameBoard:checkForWin()
+                    love.mouse.setPosition(x - 5 ,y)
+                    
+               end
+            end
+        end
+   end   
 end
 
-function Card:render(x, y)
-        love.graphics.draw(gTextures['cards'], gCardQuads[self.suit][self.face], 
-            self.x, self.y)
+--[[ checks if the current card can be placed in any winning pile and 
+      returns the index of the winPool if so; else returns 0 ]]
+    
+function Card:checkWinPile(gameBoard)
+
+        -- find out number of winPools already populated--        
+        local count = 0
+        local index = 0
+        for i = 1, 4 do
+                if #gameBoard.winPools[i] > 0 then
+                   count = count + 1
+                end
+        end
+        
+       
+        --[[ if this card is an ace start a new WinPool, else check if this card can be placed on top of any existing WinPool ]]--
+        
+        if self.face == ACE then
+                return (count + 1)
+        else
+            for i = 1, count do
+                local temp = #gameBoard.winPools[i]
+                if (self:compareCards(gameBoard.winPools[i][temp], 'descending', 'same')) then
+                   index = i
+                   return index
+                end
+            end
+        end
+        return index
 end
 
-function Card:transferTableaus(gameBoard, tableau, x,y)
-        ---find position of top Card in its old tableau
+function Card:transferTableaus(gameBoard, tableau, x,y, pile)
+        ---find position of top Card in its old tableau/pool
         local topCardPosition = 0
         for position,card in pairs(tableau) do
                 if card == gameBoard.cardPickedUp then
@@ -141,49 +166,122 @@ function Card:transferTableaus(gameBoard, tableau, x,y)
                         break
                 end 
         end
-       
+        
+        --check if its a single card & if its been placed in an available free/win Pool--
+        if not gameBoard.cardPickedUp.child then
+                if gameBoard.numEmptyFreePools > 0 then
+                        for i = 1, NUM_FREEPOOLS do
+                                local posX = FREEPOOL_X_POS + 80 * (i - 1)
+                                local posY = POOL_Y_POS
+                                if #gameBoard.freePools[i] == 0 and
+                                   x >= posX and x <= posX + CARD_WIDTH and
+                                   y >= posY and y <= posY + CARD_HEIGHT then
+                               
+                                   gameBoard.cardPickedUp:moveCards(tableau, topCardPosition, gameBoard.freePools[i],
+                                      nil, posX, posY )
+                                return
+                                end
+                        end
+                end
+         end 
+                                        
+        --check if the card is placed on another tableau (not same as original tableau)
         for i = 1, NUM_TABLEAUS do
-              ---ensure it is not the same as original Tableau
-              if i ~= gameBoard.pickedUpTableau and #gameBoard.tableaus[i] > 0 then
-                      local bottomCard = gameBoard.tableaus[i][#gameBoard.tableaus[i]]
-                      local tableau_x = bottomCard.x
-                      local tableau_y = bottomCard.y
-                      if x >= tableau_x and x <= tableau_x + CARD_WIDTH and
-                         y >= tableau_y and y <= tableau_y + CARD_HEIGHT
-                      then 
-                              print("Calling Placedown..."..bottomCard.face.."--"..bottomCard.suit)
-                              gameBoard.cardPickedUp:placeDown(gameBoard, gameBoard.tableaus[i], bottomCard)
-                              
-                              -- remove the picked up cards from old tableau and insert into new tableau 
-                              while topCardPosition <= #tableau  do
-                                  table.insert(gameBoard.tableaus[i], table.remove(tableau, topCardPosition)) 
-                                  print("Position is:"..gameBoard.tableaus[i][#gameBoard.tableaus[i]].face)
-	                      end   
-	                      
-	                      if gameBoard.cardPickedUp.parent then 
-	                        gameBoard.cardPickedUp.parent.child = nil
-	                      end
-	                      gameBoard.cardPickedUp.parent = bottomCard
-                              bottomCard.child = gameBoard.cardPickedUp
-                                                   
-                      return
+              if pile == FREEPOOL_PILE or i ~= gameBoard.pickedUpTableau then
+                      
+                      local bottomCard = nil 
+                      local tableau_x = 10 + 80 * (i - 1)
+                      local tableau_y = 160
+                      
+                      if #gameBoard.tableaus[i] > 0 then 
+                               bottomCard=gameBoard.tableaus[i][#gameBoard.tableaus[i]]
+                               tableau_x = bottomCard.x
+                               tableau_y = bottomCard.y
                       end
+                      --if the bottom card for this tableau is of opposite suit & 1 value above the top Picked up card 
+                      --remove the picked up cards from old tableau and insert into new tableau 
+                           
+                        if x >= tableau_x and x <= tableau_x + CARD_WIDTH and
+                           y >= tableau_y and y <= tableau_y + CARD_HEIGHT 
+                        then 
+                              --move the cards from old tableau to new tableau
+                              if bottomCard == nil then --i.e. empty tableau
+                                gameBoard.cardPickedUp:moveCards(tableau, topCardPosition, gameBoard.tableaus[i],
+                                      bottomCard, tableau_x, tableau_y )
+                                return
+                              elseif gameBoard.cardPickedUp:compareCards(bottomCard,'ascending','opposite') then
+                                gameBoard.cardPickedUp:moveCards(tableau, topCardPosition, gameBoard.tableaus[i],
+                                      bottomCard, tableau_x, tableau_y + CARD_PADDING)
+                                return
+                              end
+                        end
               end
+        end
+        
+        --not a valid transfer move & restore picked Up cards to their old position--
+        --if old position is from a tableau --
+        if pile == TABLEAU_PILE then
+           local tableau_y = 160
+           if gameBoard.cardPickedUp.parent then
+                tableau_y = gameBoard.cardPickedUp.parent.y + CARD_PADDING
+           end
+           gameBoard.cardPickedUp:moveCards(tableau, #tableau + 1, tableau,
+                                     gameBoard.cardPickedUp.parent , 10 + 80 * (gameBoard.pickedUpTableau - 1), tableau_y)
+                                     
+        else -- old position was from free Pool
+          gameBoard.cardPickedUp:moveCards(tableau, #tableau + 1, tableau,
+                                     gameBoard.cardPickedUp.parent , 10 + 80 * (gameBoard.pickedUpTableau - 1) , 50)
         end
 end 
 
+
+
+-- move cards starting from self till last child from old tableau to new Tableau
+function Card:moveCards(oldTableau, posInTableau, newTableau, newParent, newPosX, newPosY)
+         
+         --shift the cards to new tableau
+         while posInTableau <= #oldTableau  do
+                 table.insert(newTableau, table.remove(oldTableau, posInTableau)) 
+         end   
+         
+         --reassign parent & child for self, old & new Parent cards
+         if self.parent then
+                self.parent.child = nil
+         end
+         
+         if newParent then
+             
+                newParent.child = self
+         end
+         
+         --Change x & y position of moved cards
+         self.parent = newParent
+         self.pickedUp = false
+         self.x = newPosX
+         self.y = newPosY
+          
+         local tempCard = self.child
+         while (tempCard~=nil) do
+                tempCard.pickedUp = false
+                tempCard.x = tempCard.parent.x
+    		tempCard.y = tempCard.parent.y + CARD_PADDING
+		tempCard = tempCard.child
+         end                     
+end
+
 --- compare self with secondCard as per order & suit mentioned as parameters --
-function Card:compareCards(secondCard, order, suit)
+function Card:compareCards(secondCard, order, suitOrder)
+         
          local resultFace = false
          local resultSuit = false
-        
+         
          if order == 'ascending' then
                 resultFace = ( secondCard.face == (self.face + 1))
          elseif order == 'descending' then
                 resultFace = ( secondCard.face == (self.face - 1))
          end
          
-         if self.suit ~= 'opposite' then
+         if suitOrder ~= 'opposite' then
                 resultSuit = (self.suit == secondCard.suit)
          elseif self.suit == HEARTS then
                 resultSuit = (secondCard.suit ~= DIAMONDS)
@@ -195,14 +293,10 @@ function Card:compareCards(secondCard, order, suit)
                 resultSuit = (secondCard.suit ~= SPADES)
          end
          
-         if suit == 'opposite' then
-                resultSuit= (self.suit == secondCard.suit) and resultSuit
+         if suitOrder == 'opposite' then
+                resultSuit=( (self.suit ~= secondCard.suit) and resultSuit)
          end
-         
+        
          return (resultFace and resultSuit)
 end                
-         
-         
-         
-
-
+ 

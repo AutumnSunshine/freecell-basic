@@ -7,19 +7,22 @@ GameBoard = Class{}
 function GameBoard:init()
     self.deck = Deck()
     self.tableaus = {}
-    self.tablePool = {}
-    self.freePool = {}
+    self.winPools = {}
+    self.freePools = {}
     self.cardPickedUp = nil
     self.pickedUpTableau = 0 
+    self.numEmptyFreePools = 4
+    self.numEmptyTableaus = 0
+    
 
     self:generateTableaus()
 end
 
---function that checks and sets if cards are ordered - to identify which cards can be moved ---
+--function that checks and sets if cards are ordered, starting from bottom of each tableau 
+-- to identify which cards are allowed to move
 function GameBoard:checkOrder(tableau)
              
              local tempCard = tableau[#tableau]
-             print("Checking..."..tempCard.face.." "..tempCard.suit)
              while tempCard do
                tempCard.isOrdered = true
                if tempCard.parent and tempCard:compareCards(tempCard.parent,'ascending', 'opposite') then
@@ -29,7 +32,6 @@ function GameBoard:checkOrder(tableau)
                end
              end
 end  
----
 
 function GameBoard:generateTableaus()
     
@@ -52,50 +54,58 @@ function GameBoard:generateTableaus()
             newCard.x = xPos
             newCard.y = yPos
 
-	    --Initiate parent for every card & simltaneously set the parent's child card
+	    --initiate parent for every card & simltaneously set the parent's child card
 	    if j > 1 then
 		newCard.parent = self.tableaus[i][j-1]
 	    	newCard.parent.child = newCard
 	    end
 	    	
             table.insert(self.tableaus[i], newCard)
-            
-            local padding = 25
-            yPos = yPos + padding
+            yPos = yPos + CARD_PADDING
         end
         self:checkOrder(self.tableaus[i])
     end
-        
- 
+    
+    --populate the freePool with empty lists
+    for i = 1, NUM_FREEPOOLS do
+        table.insert(self.freePools,{})
+    end
+    
+    --populate the winPool with empty lists
+    for i = 1, 4 do
+        table.insert(self.winPools,{})
+    end
+    
  end
 
 function GameBoard:update(dt)
 
-    -- update all cards in hand first
-    --[[for i = 1, #self.pickedUpCards do
-        self.pickedUpCards[i]:update(dt, self)
-    end]]--
-
-    -- iterate through all visible cards, allowing mouse input 
+    -- iterate through all tableau cards, allowing mouse input if card is bottom-most 
     for i = 1, NUM_TABLEAUS do
 
         for j = #self.tableaus[i], 1, -1 do
             local temp = self.tableaus[i][j]
             if temp~= nil and temp.isOrdered then
-                self.tableaus[i][j]:update(dt, self, self.tableaus[i])
+                self.tableaus[i][j]:update(dt, self, self.tableaus[i], TABLEAU_PILE)
             end 
         end
-	
+    end 
+
+    -- iterate through all pool cards, allowing mouse input
+    
+    for i = 1, NUM_FREEPOOLS do
+        if (#self.freePools[i] > 0) then 
+               self.freePools[i][1]:update(dt, self, self.freePools[i], FREEPOOL_PILE)
+        end
     end 
 end
 
 function GameBoard:render()
-    self:drawBackground()
-
-    -- render tableaus
-    self:renderTableaus()
-
+   
+   self:drawBackground()
+   self:renderTableaus()
    self:renderPickedUpCards()
+   self:renderPools()
 end
 
 function GameBoard:renderPickedUpCards()
@@ -116,24 +126,68 @@ function GameBoard:renderTableaus()
     end
 end
 
-  
+function GameBoard:renderPools()
+   
+    for i = 1, NUM_FREEPOOLS do
+        for j = 1, #self.freePools[i] do
+            self.freePools[i][j]:render()
+        end
+    end
+    
+    for i = 1, 4 do
+        for j = 1, #self.winPools[i] do
+            self.winPools[i][j]:render()
+        end
+    end
+end
 
+function GameBoard:countEmptyPiles()
+    local count = 0
+    
+    for i = 1, NUM_FREEPOOLS do
+        if #self.freePools[i] == 0 then
+           count = count + 1
+        end
+    end
+    
+    self.numEmptyFreePools = count
+    count = 0
+    
+    for i = 1, NUM_TABLEAUS do
+        if #self.tableaus[i] == 0 then
+        
+           count = count + 1
+        end
+    end
+    
+    self.numEmptyTableaus = count
+end
 
+function GameBoard:checkForWin()
+   
+   for i = 1, 4 do
+        if #self.winPools[i] < CARDS_IN_SUIT then
+                return
+        end
+   end
+   print("Congratulations!")
+   love.graphics.setColor(0, 0, 0, 1)
+   love.graphics.printf ("Congratulations! You win!!!", WINDOW_WIDTH/2,  WINDOW_HEIGHT/2, 200, "center")
+
+end
 
 ---draws the outlines for Free Pile, Win Pile and tableaus
 function GameBoard:drawBackground()
     love.graphics.clear(0, 0.3, 0, 1)
 
-    -- main stack placeholders
+    -- free Pool 
     love.graphics.rectangle('line', 10, 50, CARD_WIDTH, CARD_HEIGHT, 3)
     love.graphics.rectangle('line', 90, 50, CARD_WIDTH, CARD_HEIGHT, 3)
     love.graphics.rectangle('line', 170, 50, CARD_WIDTH, CARD_HEIGHT, 3)
     love.graphics.rectangle('line', 250, 50, CARD_WIDTH, CARD_HEIGHT, 3)
 
-    -- active stock card
+    -- winPool
     love.graphics.rectangle('line', 410, 50, CARD_WIDTH, CARD_HEIGHT, 3)
-
-    -- stock itself
     love.graphics.rectangle('line', 490, 50, CARD_WIDTH, CARD_HEIGHT, 3)
     love.graphics.rectangle('line', 570, 50, CARD_WIDTH, CARD_HEIGHT, 3)
     love.graphics.rectangle('line', 650, 50, CARD_WIDTH, CARD_HEIGHT, 3)

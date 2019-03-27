@@ -11,6 +11,11 @@ CARDS_IN_SUIT = 13
 CARDS_IN_DECK = 52
 
 NUM_TABLEAUS = 8
+NUM_FREEPOOLS = 4
+
+POOL_Y_POS = 50
+FREEPOOL_X_POS = 10
+CARD_PADDING = 25
 
 -- starting indices for suits in sprite sheet
 SPADES_START = 1
@@ -53,3 +58,5 @@ HEARTS = 'hearts'
 DIAMONDS = 'diamonds'
 CLUBS = 'clubs'
 SPADES = 'spades'
+
+
