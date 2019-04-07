@@ -1,11 +1,12 @@
 Class = require 'lib/class'
 
 require 'src/constants'
-
+require 'src/MasterCard'
 require 'src/GameBoard'
 require 'src/Card'
 require 'src/Deck'
 require 'src/Util'
+
 
 gTextures = {
     ['cards'] = love.graphics.newImage('graphics/playingCards.png'),

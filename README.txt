@@ -6,9 +6,9 @@ Objective :
 To stack all the cards suit-wise in the 4 winning piles [top right of the game board] starting from ACE till KING
 
 Rules     :
-To achieve this, the player can move around the cards in the tableaus with the following rules--
+To achieve this, the player can move around the cards in the tableaus [8 piles of open-faced cards] with the following rules--
             
-1. any card can be moved onto a card of the opposite suit and with face value 1 above the card only
+1. Any card can be moved onto a card of the opposite suit and with face value 1 above the card only
 2. Single cards from tableau can be moved into any empty Free Pools [4 piles on top left of the game board] 
 3. Only single cards at the bottom of tableau/ ordered cards [i.e. alterating suits and face values in ascending order from bottom] an be moved
 4. Single cards can be moved from tableau or free pool to the winning piles, if it is an ace or is the succeeding card of any card currently in the winning pile

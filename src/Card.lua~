@@ -177,7 +177,7 @@ function Card:transferTableaus(gameBoard, tableau, x,y, pile)
                                 if #gameBoard.freePools[i] == 0 and
                                    x >= posX and x <= posX + CARD_WIDTH and
                                    y >= posY and y <= posY + CARD_HEIGHT then
-                               
+                                   gameBoard.mastercard:setQuote(0)
                                    gameBoard.cardPickedUp:moveCards(tableau, topCardPosition, gameBoard.freePools[i],
                                       nil, posX, posY )
                                 return
@@ -213,6 +213,7 @@ function Card:transferTableaus(gameBoard, tableau, x,y, pile)
                         
                         then 
                               --move the cards from old tableau to new tableau
+                              gameBoard.mastercard:setQuote(1)
                               if bottomCard == nil then --i.e. empty tableau
                                 gameBoard.cardPickedUp:moveCards(tableau, topCardPosition, gameBoard.tableaus[i],
                                       bottomCard, tableau_x, tableau_y )
@@ -230,6 +231,7 @@ function Card:transferTableaus(gameBoard, tableau, x,y, pile)
         --if old position is from a tableau --
         if pile == TABLEAU_PILE then
            local tableau_y = 160
+           gameBoard.mastercard:setQuote(0)
            if gameBoard.cardPickedUp.parent then
                 tableau_y = gameBoard.cardPickedUp.parent.y + CARD_PADDING
            end

@@ -14,6 +14,7 @@ function GameBoard:init()
     self.numEmptyFreePools = 4
     self.numEmptyTableaus = 0
     self.isWin = false
+    self.mastercard = MasterCard()
 
     self:generateTableaus()
 end
@@ -103,6 +104,7 @@ end
 function GameBoard:render()
    
    self:drawBackground()
+   self.mastercard:render()
    self:renderTableaus()
    self:renderPickedUpCards()
    self:renderPools()
@@ -111,7 +113,7 @@ function GameBoard:render()
          love.graphics.clear(0, 0.3, 0, 1)
          love.graphics.setNewFont(50)
          love.graphics.setColor(1, 1, 1, 1)
-         love.graphics.printf ("Congratulations! You have won!", 0 ,  WINDOW_HEIGHT/2, WINDOW_WIDTH, "center")
+         love.graphics.printf ("Congratulations! You have won!", 0 ,  WINDOW_HEIGHT/4, WINDOW_WIDTH, "center")
    end
 
 end
